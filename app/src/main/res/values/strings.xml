@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">NChat</string>
+    <string name="socket_server_url">https://pial.nsoftcompany.xyz</string>
 </resources>

@@ -13,6 +13,7 @@ import org.json.JSONObject;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import io.socket.client.IO;
@@ -24,17 +25,7 @@ public class ChatActivity extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private List<MessageModel> messages;
     private MyAdapter adapter;
-    private String sender = "";
     private Socket socket;
-
-    {
-        try {
-            String url = "http://pial.nsoftcompany.xyz/";
-            socket = IO.socket(url);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,9 +42,18 @@ public class ChatActivity extends AppCompatActivity {
 //            return insets;
 //        });
         // my code starts here ---------------------------------------------------------------------
-        sharedPreferences = getSharedPreferences(String.valueOf(R.string.app_name), MODE_PRIVATE);
+        sharedPreferences = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
+        String sender = sharedPreferences.getString("name", "Anonymous");
 
-        sender = sharedPreferences.getString("name", "Anonymous");
+        IO.Options options = new IO.Options();
+        options.auth = new HashMap<>();
+        options.auth.put("username", sender);
+        try {
+            socket = IO.socket("https://pial.nsoftcompany.xyz/", options);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
         messages = new ArrayList<>();
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -62,6 +62,8 @@ public class ChatActivity extends AppCompatActivity {
 
         adapter = new MyAdapter(ChatActivity.this, messages, sender);
         binding.recyclerView.setAdapter(adapter);
+
+//        socket.emit("joinRoom", "roompial");
 
         socket.on("received_message", onMessage);
 
