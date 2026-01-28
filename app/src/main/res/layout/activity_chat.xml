@@ -4,29 +4,39 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/light_colour"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:id="@+id/logoutLayout"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:orientation="vertical"
+        android:layout_height="wrap_content"
+        android:background="@color/primary_colour"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        android:gravity="center_vertical"
+        >
 
-        <Button
-            android:id="@+id/logoutButton"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/nameTextView"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:text="Log out"
-            android:textSize="18sp"
+            android:layout_weight="1"
+            android:text="Name"
             android:textColor="@color/white"
-            android:backgroundTint="#FF5252"
-            app:cornerRadius="5dp"
-            android:layout_marginRight="10dp"
+            android:textSize="22sp"
+            android:layout_marginRight="50dp"
+            />
+
+        <ImageView
+            android:id="@+id/logoutButton"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/logout"
             />
 
     </LinearLayout>
@@ -39,8 +49,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/logoutLayout"
-        />
+        app:layout_constraintTop_toBottomOf="@id/logoutLayout" />
 
     <!-- Bottom input bar -->
     <LinearLayout
@@ -69,8 +78,8 @@
 
         <ImageView
             android:id="@+id/sentButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:layout_marginStart="8dp"
             android:src="@drawable/sent_30" />
     </LinearLayout>

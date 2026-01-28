@@ -75,7 +75,8 @@ public class MyMethodsClass {
 
         requestQueue.add(objectRequest);
     }
-    public void loginPostRequest(String email, String password, ResponseCallback callback){
+
+    public void loginPostRequest(String email, String password, ResponseCallback callback) {
         String url = "https://backend.nsoftcompany.xyz/login";
 
         JSONObject jsonObject = new JSONObject();
@@ -90,6 +91,34 @@ public class MyMethodsClass {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, jsonObject, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject jsonObject) {
+                if (jsonObject != null) {
+                    callback.onSuccess(jsonObject);
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError volleyError) {
+                callback.onError(volleyError);
+            }
+        }) {
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                headers.put("Accept", "application/json");
+                return headers;
+            }
+        };
+        requestQueue.add(jsonObjectRequest);
+    }
+
+    public void userDetailsPostRequest(String userId, ResponseCallback callback) {
+        String url = "https://backend.nsoftcompany.xyz/users/" + userId;
+
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject jsonObject) {
                 if (jsonObject != null){
                     callback.onSuccess(jsonObject);
                 }
@@ -99,15 +128,8 @@ public class MyMethodsClass {
             public void onErrorResponse(VolleyError volleyError) {
                 callback.onError(volleyError);
             }
-        }){
-            @Override
-            public Map<String, String> getHeaders() throws AuthFailureError {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/json");
-                headers.put("Accept", "application/json");
-                return headers;
-            }
-        };
+        });
+
         requestQueue.add(jsonObjectRequest);
     }
 

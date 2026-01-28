@@ -2,14 +2,12 @@ package com.nsoft.nchat;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.core.content.ContextCompat;
 
 import com.android.volley.VolleyError;
 import com.nsoft.nchat.databinding.ActivitySignInBinding;
@@ -28,22 +26,26 @@ public class SignInActivity extends AppCompatActivity {
         binding = ActivitySignInBinding.inflate(getLayoutInflater());
         // -----------------------------------------------------------------------------------------
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+//        EdgeToEdge.enable(this);
         setContentView(binding.getRoot());                                  // my code -------------
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+//            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+//            return insets;
+//        });
         // my code starts here ---------------------------------------------------------------------
         sharedPreferences = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
         editor = sharedPreferences.edit();
         myMethodsClass = new MyMethodsClass(getApplicationContext());
 
         boolean isLoggedIn = sharedPreferences.getBoolean("is_logged_in", false);
-        if (isLoggedIn){
+        if (isLoggedIn) {
             startActivity(new Intent(this, ChatActivity.class));
             finish();
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.primary_colour));
         }
 
 
@@ -62,16 +64,17 @@ public class SignInActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(JSONObject jsonObject) {
                         boolean status = Boolean.parseBoolean(jsonObject.optString("status", "false"));
-                        String response = jsonObject.optString("response", "Null");
+                        if (status) {
+                            String user_id = jsonObject.optString("user_id", "Null");
 
-                        Toast.makeText(SignInActivity.this, response, Toast.LENGTH_SHORT).show();
-                        if (status){
+                            Toast.makeText(SignInActivity.this, user_id, Toast.LENGTH_SHORT).show();
                             editor.putBoolean("is_logged_in", true).apply();
+                            editor.putString("user_id", user_id).apply();
+
                             startActivity(new Intent(SignInActivity.this, ChatActivity.class));
                             finish();
-                        }
-                        else {
-                            Toast.makeText(SignInActivity.this, response, Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(SignInActivity.this, "No data found", Toast.LENGTH_SHORT).show();
                         }
                     }
 

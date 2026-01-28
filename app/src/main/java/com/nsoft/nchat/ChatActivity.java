@@ -3,11 +3,15 @@ package com.nsoft.nchat;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.android.volley.VolleyError;
 import com.nsoft.nchat.databinding.ActivityChatBinding;
 
 import org.json.JSONException;
@@ -24,11 +28,13 @@ import io.socket.emitter.Emitter;
 
 public class ChatActivity extends AppCompatActivity {
     private ActivityChatBinding binding;
+    private MyMethodsClass myMethodsClass;
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
     private List<MessageModel> messages;
     private MyAdapter adapter;
     private Socket socket;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +51,15 @@ public class ChatActivity extends AppCompatActivity {
 //            return insets;
 //        });
         // my code starts here ---------------------------------------------------------------------
+        myMethodsClass = new MyMethodsClass(getApplicationContext());
         sharedPreferences = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
         editor = sharedPreferences.edit();
         String sender = sharedPreferences.getString("name", "Anonymous");
+        userId = sharedPreferences.getString("user_id", "null");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.primary_colour));
+        }
 
         IO.Options options = new IO.Options();
         options.auth = new HashMap<>();
@@ -94,6 +106,7 @@ public class ChatActivity extends AppCompatActivity {
                     .setMessage("Do you really want to log out?")
                     .setPositiveButton("Yes", (dialog, which) -> {
                         editor.putBoolean("is_logged_in", false).apply();
+                        editor.putString("user_id", "");
                         startActivity(new Intent(ChatActivity.this, SignInActivity.class));
                         finish();
                     })
@@ -134,6 +147,25 @@ public class ChatActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         socket.connect();
+
+        myMethodsClass.userDetailsPostRequest(userId, new MyMethodsClass.ResponseCallback() {
+            @Override
+            public void onSuccess(JSONObject jsonObject) {
+                boolean status = Boolean.parseBoolean(jsonObject.optString("status"));
+                if (status) {
+                    String name = jsonObject.optString("name");
+                    binding.nameTextView.setText(name);
+                }
+                else {
+                    Toast.makeText(ChatActivity.this, "Somethings went wrong!", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(VolleyError error) {
+                Toast.makeText(ChatActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
