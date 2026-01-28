@@ -1,5 +1,7 @@
 package com.nsoft.nchat;
 
+import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
@@ -23,6 +25,7 @@ import io.socket.emitter.Emitter;
 public class ChatActivity extends AppCompatActivity {
     private ActivityChatBinding binding;
     private SharedPreferences sharedPreferences;
+    private SharedPreferences.Editor editor;
     private List<MessageModel> messages;
     private MyAdapter adapter;
     private Socket socket;
@@ -43,6 +46,7 @@ public class ChatActivity extends AppCompatActivity {
 //        });
         // my code starts here ---------------------------------------------------------------------
         sharedPreferences = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
+        editor = sharedPreferences.edit();
         String sender = sharedPreferences.getString("name", "Anonymous");
 
         IO.Options options = new IO.Options();
@@ -82,6 +86,22 @@ public class ChatActivity extends AppCompatActivity {
                 socket.emit("send_message", messageBundle);
                 binding.editText.setText("");
             }
+        });
+
+        binding.logoutButton.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("Confirm logout")
+                    .setMessage("Do you really want to log out?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        editor.putBoolean("is_logged_in", false).apply();
+                        startActivity(new Intent(ChatActivity.this, SignInActivity.class));
+                        finish();
+                    })
+                    .setNegativeButton("No", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
+
         });
 
 
