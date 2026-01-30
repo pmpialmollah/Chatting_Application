@@ -17,6 +17,7 @@ public class MyAdapter extends RecyclerView.Adapter {
     private String myId;
     private static final int SEND_MESSAGE = 1;
     private static final int RECEIVED_MESSAGE = 0;
+    private static final int TYPING_MESSAGE = 2;
 
     public MyAdapter(Activity context, List<MessageModel> messages, String myId) {
         this.context = context;
@@ -48,6 +49,9 @@ public class MyAdapter extends RecyclerView.Adapter {
         if (viewType == SEND_MESSAGE) {
             View myView = context.getLayoutInflater().inflate(R.layout.send_message_layout, parent, false);
             return new sendMessageViewHolder(myView);
+        } else if (viewType == RECEIVED_MESSAGE) {
+            View myView = context.getLayoutInflater().inflate(R.layout.received_message_layout, parent, false);
+            return new receivedMessageViewHolder(myView);
         } else {
             View myView = context.getLayoutInflater().inflate(R.layout.received_message_layout, parent, false);
             return new receivedMessageViewHolder(myView);
@@ -61,15 +65,16 @@ public class MyAdapter extends RecyclerView.Adapter {
             String message = messages.get(position).getMessage();
 
             myHolder.message.setText(message);
-
-
         } else if (getItemViewType(position) == RECEIVED_MESSAGE) {
             receivedMessageViewHolder myHolder = (receivedMessageViewHolder) holder;
             String message = messages.get(position).getMessage();
 
             myHolder.message.setText(message);
-
+        } else {
+            receivedMessageViewHolder myHolder = (receivedMessageViewHolder) holder;
+            myHolder.message.setText("Typing...");
         }
+
     }
 
     @Override
@@ -79,12 +84,41 @@ public class MyAdapter extends RecyclerView.Adapter {
 
     @Override
     public int getItemViewType(int position) {
-        String senderId = messages.get(position).getSenderId();
+        MessageModel messageModel = messages.get(position);
 
-        if (senderId.equals(myId)) {
+        if (messageModel.isTyping()) {
+            return TYPING_MESSAGE;
+        }
+
+        if (messageModel.getSenderId().equals(myId)) {
             return SEND_MESSAGE;
         } else {
             return RECEIVED_MESSAGE;
+        }
+    }
+
+    // my custom method
+    public void showTypingIndication(boolean isTyping) {
+        if (isTyping) {
+            boolean alreadyHasTyping = false;
+            if (!messages.isEmpty()) {
+
+                if (messages.get(getItemCount() - 1).isTyping()) {
+                    alreadyHasTyping = true;
+                }
+            }
+
+            if (!alreadyHasTyping) {
+                messages.add(new MessageModel(true));
+                notifyItemInserted(messages.size() - 1);
+            }
+        } else {
+            for (int i = messages.size() - 1; i >= 0; i--) {
+                if (messages.get(i).isTyping()) {
+                    messages.remove(i);
+                    notifyItemRemoved(i);
+                }
+            }
         }
     }
 }

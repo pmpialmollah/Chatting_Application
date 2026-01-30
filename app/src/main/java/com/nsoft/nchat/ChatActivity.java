@@ -5,8 +5,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
-import android.view.Gravity;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -38,15 +41,15 @@ public class ChatActivity extends AppCompatActivity {
     private Socket socket;
     private String userId;
     private Toast toast;
+    private boolean previousTrue = false;
+    private Handler typingHandler = new Handler(Looper.getMainLooper());
+    private Runnable typingEndRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // initialize here -------------------------------------------------------------------------
-        binding = ActivityChatBinding.inflate(getLayoutInflater());
-        // -----------------------------------------------------------------------------------------
-
         super.onCreate(savedInstanceState);
 //        EdgeToEdge.enable(this);
+        binding = ActivityChatBinding.inflate(getLayoutInflater());         // my code -------------
         setContentView(binding.getRoot());                                  // my code -------------
 //        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
 //            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -121,6 +124,29 @@ public class ChatActivity extends AppCompatActivity {
                     .show();
         });
 
+        binding.editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                socket.emit("typing");
+
+                if (typingEndRunnable != null) {
+                    typingHandler.removeCallbacks(typingEndRunnable);
+                }
+                typingEndRunnable = () -> {
+                    socket.emit("typingend");
+                };
+
+                typingHandler.postDelayed(typingEndRunnable, 2000);
+            }
+        });
 
     }
 
@@ -146,6 +172,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     };
 
+    // typing indicator section --------------------------------------------------------------------
     private Emitter.Listener onTyping = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
@@ -156,23 +183,11 @@ public class ChatActivity extends AppCompatActivity {
 
                 Log.d("RESPONSE", "call: " + response);
                 runOnUiThread(() -> {
-                    if (isTyping) {
-                        if (toast != null) {
-                            toast.cancel();
-                        }
-                        toast = Toast.makeText(getApplicationContext(), "Someone is typing...", Toast.LENGTH_SHORT);
-                        toast.setGravity(Gravity.CENTER, 0, 0);
-                        toast.show();
 
-                    } else {
-                        if (toast != null) {
-                            toast.cancel();
-                        }
+                    adapter.showTypingIndication(isTyping);
+                    binding.recyclerView.scrollToPosition(adapter.getItemCount() - 1);
 
-                        toast = Toast.makeText(getApplicationContext(), "Typing end.", Toast.LENGTH_SHORT);
-                        toast.setGravity(Gravity.CENTER, 0, 0);
-                        toast.show();
-                    }
+
                 });
 
             }
