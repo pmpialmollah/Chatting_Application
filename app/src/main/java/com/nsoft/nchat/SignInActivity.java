@@ -40,7 +40,7 @@ public class SignInActivity extends AppCompatActivity {
 
         boolean isLoggedIn = sharedPreferences.getBoolean("is_logged_in", false);
         if (isLoggedIn) {
-            startActivity(new Intent(this, ChatActivity.class));
+            startActivity(new Intent(this, DashboardActivity.class));
             finish();
         }
 
@@ -71,7 +71,7 @@ public class SignInActivity extends AppCompatActivity {
                             editor.putBoolean("is_logged_in", true).apply();
                             editor.putString("user_id", user_id).apply();
 
-                            startActivity(new Intent(SignInActivity.this, ChatActivity.class));
+                            startActivity(new Intent(SignInActivity.this, DashboardActivity.class));
                             finish();
                         } else {
                             Toast.makeText(SignInActivity.this, "No data found", Toast.LENGTH_SHORT).show();

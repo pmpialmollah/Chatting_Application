@@ -7,9 +7,11 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,6 +28,12 @@ public class MyMethodsClass {
 
     public interface ResponseCallback {
         void onSuccess(JSONObject jsonObject);
+
+        void onError(VolleyError error);
+    }
+
+    public interface JsonArrayCallback {
+        void onSuccess(JSONArray jsonArray);
 
         void onError(VolleyError error);
     }
@@ -119,7 +127,7 @@ public class MyMethodsClass {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject jsonObject) {
-                if (jsonObject != null){
+                if (jsonObject != null) {
                     callback.onSuccess(jsonObject);
                 }
             }
@@ -131,6 +139,26 @@ public class MyMethodsClass {
         });
 
         requestQueue.add(jsonObjectRequest);
+    }
+
+    public void getChatList(String userId, JsonArrayCallback callback) {
+        String url = "https://backend.nsoftcompany.xyz/data/" + userId;
+
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
+            @Override
+            public void onResponse(JSONArray jsonArray) {
+                if (jsonArray != null || !(jsonArray.length() > 0)) {
+                    callback.onSuccess(jsonArray);
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError volleyError) {
+                callback.onError(volleyError);
+            }
+        });
+        requestQueue.add(jsonArrayRequest);
     }
 
 }

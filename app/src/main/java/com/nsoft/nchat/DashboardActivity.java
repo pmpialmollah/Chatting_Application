@@ -1,20 +1,16 @@
 package com.nsoft.nchat;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.VolleyError;
 import com.nsoft.nchat.databinding.ActivityDashboardBinding;
 
 import org.json.JSONArray;
@@ -22,107 +18,89 @@ import org.json.JSONObject;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 
 public class DashboardActivity extends AppCompatActivity {
     private ActivityDashboardBinding binding;
     private SharedPreferences sharedPreferences;
     private Socket socket;
-    private List<String> activeUsersList;
-    private MyListAdapter myListAdapter;
+    private MyMethodsClass myMethodsClass;
+    private String userId;
+    private List<String> receiverList;
+    private ChatListAdapter myAdapter;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         binding = ActivityDashboardBinding.inflate(getLayoutInflater());        // my code ---------
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+//        EdgeToEdge.enable(this);
         setContentView(binding.getRoot());                                      // my code ---------
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+//            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+//            return insets;
+//        });
         // my code starts here ---------------------------------------------------------------------
         sharedPreferences = getSharedPreferences(getString(R.string.app_name), MODE_PRIVATE);
-        String userName = sharedPreferences.getString("name", "");
+        myMethodsClass = new MyMethodsClass(getApplicationContext());
+        receiverList = new ArrayList<>();
 
-        IO.Options options = new IO.Options();
-        options.auth = new HashMap<>();
-        options.auth.put("username", userName);
+        userId = sharedPreferences.getString("user_id", "null");
+
         try {
-            socket = IO.socket("https://pial.nsoftcompany.xyz/", options);
+            socket = IO.socket("https://pial.nsoftcompany.xyz/");
             socket.connect();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
 
-        activeUsersList = new ArrayList<>();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.primary_colour));
+        }
 
-        socket.on("activeUsers", onActiveUsers);
+        myAdapter = new ChatListAdapter(DashboardActivity.this, receiverList);
+        binding.chatListRecyclerView.setAdapter(myAdapter);
+        binding.chatListRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        myListAdapter = new MyListAdapter();
-        binding.activeUsersRecyclerView.setAdapter(myListAdapter);
-        binding.activeUsersRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        binding.chatButton.setOnClickListener(v -> {
+            startActivity(new Intent(DashboardActivity.this, ChatActivity.class));
+        });
 
+        binding.allUsersButton.setOnClickListener(v -> {
+            startActivity(new Intent(this, UserlistActivity.class));
+        });
 
     }   // on create ends here ---------------------------------------------------------------------
 
-    private Emitter.Listener onActiveUsers = new Emitter.Listener() {
-        @Override
-        public void call(Object... args) {
-            JSONArray userList = (JSONArray) args[0];
-            if (userList == null || userList.length() == 0) {
-                return;
-            }
-            runOnUiThread(() -> {
-                activeUsersList.clear();
-                for (int i = 0; i < userList.length(); i++) {
-                    JSONObject user = userList.optJSONObject(i);
-                    if (user != null) {
-                        String name = user.optString("username");
-                        activeUsersList.add(name);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        myMethodsClass.getChatList(userId, new MyMethodsClass.JsonArrayCallback() {
+            @Override
+            public void onSuccess(JSONArray jsonArray) {
+                if (jsonArray != null && jsonArray.length() > 0) {
+                    receiverList.clear();
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jsonObject = jsonArray.optJSONObject(i);
+                        if (jsonObject != null) {
+                            String receiverName = jsonObject.optString("receiver_name");
+                            receiverList.add(receiverName);
+                        }
                     }
+                    myAdapter.notifyDataSetChanged();
+                } else {
+                    Toast.makeText(DashboardActivity.this, "No data found", Toast.LENGTH_SHORT).show();
                 }
-                myListAdapter.notifyDataSetChanged();
-            });
-        }
-    };
-
-
-    public class MyListAdapter extends RecyclerView.Adapter<MyListAdapter.MyViewHolder> {
-        public class MyViewHolder extends RecyclerView.ViewHolder {
-            TextView userNameTextView;
-
-            public MyViewHolder(@NonNull View itemView) {
-                super(itemView);
-                userNameTextView = itemView.findViewById(R.id.userNameTextView);
             }
-        }
 
-        @NonNull
-        @Override
-        public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View myView = getLayoutInflater().inflate(R.layout.user_list_layout, parent, false);
-            return new MyViewHolder(myView);
-        }
+            @Override
+            public void onError(VolleyError error) {
 
-        @Override
-        public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-            String userName = activeUsersList.get(position);
-            holder.userNameTextView.setText(userName);
-        }
-
-        @Override
-        public int getItemCount() {
-            return activeUsersList.size();
-        }
-
+            }
+        });
     }
-
 }   // main class ends here ------------------------------------------------------------------------

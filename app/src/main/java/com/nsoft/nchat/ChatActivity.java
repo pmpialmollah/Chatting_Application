@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Gravity;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,6 +37,7 @@ public class ChatActivity extends AppCompatActivity {
     private MyAdapter adapter;
     private Socket socket;
     private String userId;
+    private Toast toast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +66,7 @@ public class ChatActivity extends AppCompatActivity {
 
         IO.Options options = new IO.Options();
         options.auth = new HashMap<>();
-        options.auth.put("username", sender);
+        options.auth.put("user_id", sender);
         try {
             socket = IO.socket("https://pial.nsoftcompany.xyz/", options);
         } catch (URISyntaxException e) {
@@ -76,20 +79,22 @@ public class ChatActivity extends AppCompatActivity {
         layoutManager.setStackFromEnd(true);
         binding.recyclerView.setLayoutManager(layoutManager);
 
-        adapter = new MyAdapter(ChatActivity.this, messages, sender);
+        adapter = new MyAdapter(ChatActivity.this, messages, userId);
         binding.recyclerView.setAdapter(adapter);
 
-//        socket.emit("joinRoom", "roompial");
 
         socket.on("received_message", onMessage);
+        socket.on("typing", onTyping);
 
         binding.sentButton.setOnClickListener(v -> {
             String message = binding.editText.getText().toString().trim();
             if (!message.isEmpty()) {
                 JSONObject messageBundle = new JSONObject();
                 try {
-                    messageBundle.put("sender", sender);
-                    messageBundle.put("receiver", "web");
+                    messageBundle.put("sender_id", userId);
+                    messageBundle.put("sender_name", sender);
+                    messageBundle.put("receiver_id", "others");
+                    messageBundle.put("receiver_name", "Web");
                     messageBundle.put("message", message);
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
@@ -114,7 +119,6 @@ public class ChatActivity extends AppCompatActivity {
                         dialog.dismiss();
                     })
                     .show();
-
         });
 
 
@@ -126,8 +130,8 @@ public class ChatActivity extends AppCompatActivity {
         public void call(Object... args) {
             JSONObject messageBundle = (JSONObject) args[0];
             try {
-                String sender = messageBundle.getString("sender");
-                String receiver = messageBundle.getString("receiver");
+                String sender = messageBundle.getString("sender_id");
+                String receiver = messageBundle.getString("receiver_id");
                 String message = messageBundle.getString("message");
 
                 runOnUiThread(() -> {
@@ -139,6 +143,39 @@ public class ChatActivity extends AppCompatActivity {
                 throw new RuntimeException(e);
             }
 
+        }
+    };
+
+    private Emitter.Listener onTyping = new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            if (args != null && args.length > 0) {
+
+                String response = args[0].toString();
+                boolean isTyping = Boolean.parseBoolean(response);
+
+                Log.d("RESPONSE", "call: " + response);
+                runOnUiThread(() -> {
+                    if (isTyping) {
+                        if (toast != null) {
+                            toast.cancel();
+                        }
+                        toast = Toast.makeText(getApplicationContext(), "Someone is typing...", Toast.LENGTH_SHORT);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+
+                    } else {
+                        if (toast != null) {
+                            toast.cancel();
+                        }
+
+                        toast = Toast.makeText(getApplicationContext(), "Typing end.", Toast.LENGTH_SHORT);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                    }
+                });
+
+            }
         }
     };
 
@@ -155,8 +192,7 @@ public class ChatActivity extends AppCompatActivity {
                 if (status) {
                     String name = jsonObject.optString("name");
                     binding.nameTextView.setText(name);
-                }
-                else {
+                } else {
                     Toast.makeText(ChatActivity.this, "Somethings went wrong!", Toast.LENGTH_SHORT).show();
                 }
             }

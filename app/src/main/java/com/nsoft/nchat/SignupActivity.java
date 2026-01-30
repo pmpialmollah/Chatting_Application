@@ -7,12 +7,8 @@ import android.os.Bundle;
 import android.view.Window;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.android.volley.VolleyError;
 import com.nsoft.nchat.databinding.ActivitySignupBinding;
@@ -73,7 +69,7 @@ public class SignupActivity extends AppCompatActivity {
 
                             if (status) {
                                 editor.putString("user_id", userId).apply();
-                                startActivity(new Intent(SignupActivity.this, ChatActivity.class));
+                                startActivity(new Intent(SignupActivity.this, DashboardActivity.class));
                                 finish();
                             }
                         }

@@ -14,10 +14,15 @@
         android:theme="@style/Theme.NChat"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".UserlistActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UserListActivity"
+            android:exported="false" />
+        <activity
             android:name=".SignupActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"
-            />
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".DashboardActivity"
             android:exported="false" />
