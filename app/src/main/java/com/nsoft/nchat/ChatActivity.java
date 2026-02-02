@@ -10,24 +10,19 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.android.volley.VolleyError;
 import com.nsoft.nchat.databinding.ActivityChatBinding;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
@@ -40,7 +35,6 @@ public class ChatActivity extends AppCompatActivity {
     private MyAdapter adapter;
     private Socket socket;
     private String userId;
-    private Toast toast;
     private boolean previousTrue = false;
     private Handler typingHandler = new Handler(Looper.getMainLooper());
     private Runnable typingEndRunnable;
@@ -67,14 +61,7 @@ public class ChatActivity extends AppCompatActivity {
             getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.primary_colour));
         }
 
-        IO.Options options = new IO.Options();
-        options.auth = new HashMap<>();
-        options.auth.put("user_id", sender);
-        try {
-            socket = IO.socket("https://pial.nsoftcompany.xyz/", options);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        socket = SocketManager.getInstance().getSocket();
 
         messages = new ArrayList<>();
 
@@ -86,8 +73,18 @@ public class ChatActivity extends AppCompatActivity {
         binding.recyclerView.setAdapter(adapter);
 
 
-        socket.on("received_message", onMessage);
-        socket.on("typing", onTyping);
+        socket.on(Socket.EVENT_CONNECT, args -> {
+            Log.d("SOCKET", "Connected: " + socket.id());
+        });
+
+        socket.on(Socket.EVENT_DISCONNECT, args -> {
+            Log.d("SOCKET", "Disconnected");
+        });
+
+        socket.on(Socket.EVENT_CONNECT_ERROR, args -> {
+            Log.e("SOCKET", "Connect error: " + args[0]);
+        });
+
 
         binding.sentButton.setOnClickListener(v -> {
             String message = binding.editText.getText().toString().trim();
@@ -126,7 +123,8 @@ public class ChatActivity extends AppCompatActivity {
 
         binding.editText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void afterTextChanged(Editable s) {            }
+            public void afterTextChanged(Editable s) {
+            }
 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -151,6 +149,25 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     // on create end here --------------------------------------------------------------------------
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (socket.connected()) {
+            socket.on("received_message", onMessage);
+            socket.on("typing", onTyping);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        socket.off("received_message", onMessage);
+        socket.off("typing", onTyping);
+    }
+
     private Emitter.Listener onMessage = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
@@ -198,36 +215,15 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        socket.connect();
-
-        myMethodsClass.userDetailsPostRequest(userId, new MyMethodsClass.ResponseCallback() {
-            @Override
-            public void onSuccess(JSONObject jsonObject) {
-                boolean status = Boolean.parseBoolean(jsonObject.optString("status"));
-                if (status) {
-                    String name = jsonObject.optString("name");
-                    binding.nameTextView.setText(name);
-                } else {
-                    Toast.makeText(ChatActivity.this, "Somethings went wrong!", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onError(VolleyError error) {
-                Toast.makeText(ChatActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        socket.disconnect();
     }
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        socket.disconnect();
     }
 }

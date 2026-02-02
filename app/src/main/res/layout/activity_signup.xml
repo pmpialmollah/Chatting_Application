@@ -10,6 +10,7 @@
     tools:context=".SignupActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@drawable/top_curved_container_background"

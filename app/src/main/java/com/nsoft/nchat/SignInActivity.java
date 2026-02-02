@@ -1,5 +1,8 @@
 package com.nsoft.nchat;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -19,6 +22,8 @@ public class SignInActivity extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
     private MyMethodsClass myMethodsClass;
+    private float displayHeight = 0;
+    private final long ANIMATION_TIME = 300l;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +55,22 @@ public class SignInActivity extends AppCompatActivity {
 
 
         binding.signUpTextView.setOnClickListener(v -> {
-            startActivity(new Intent(SignInActivity.this, SignupActivity.class));
+
+            ObjectAnimator slideDownAnimation = ObjectAnimator.ofFloat(binding.mainLayout, "translationY", 0f, displayHeight);
+            slideDownAnimation.setDuration(ANIMATION_TIME);
+
+            slideDownAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+
+                    startActivity(new Intent(SignInActivity.this, SignupActivity.class));
+                    overridePendingTransition(0, 0);
+                }
+            });
+
+            slideDownAnimation.start();
+
         });
 
         binding.signInButton.setOnClickListener(v -> {
@@ -89,5 +109,16 @@ public class SignInActivity extends AppCompatActivity {
 
     }   // on create ends here ---------------------------------------------------------------------
 
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
 
+        binding.mainLayout.post(() -> {
+            displayHeight = binding.mainLayout.getHeight();
+            ObjectAnimator slideUpAnimation = ObjectAnimator.ofFloat(binding.mainLayout, "translationY", displayHeight, 0f);
+            slideUpAnimation.setDuration(ANIMATION_TIME);
+            slideUpAnimation.start();
+        });
+
+    }
 }   // main class ends here ------------------------------------------------------------------------

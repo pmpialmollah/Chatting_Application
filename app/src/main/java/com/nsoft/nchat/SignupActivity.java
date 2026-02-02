@@ -1,5 +1,8 @@
 package com.nsoft.nchat;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -20,6 +23,8 @@ public class SignupActivity extends AppCompatActivity {
     private MyMethodsClass myMethodsClass;
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
+    private float displayHeight = 0;
+    private final long ANIMATION_TIME = 300l;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,9 +49,21 @@ public class SignupActivity extends AppCompatActivity {
             window.setStatusBarColor(ContextCompat.getColor(this, R.color.primary_colour));
         }
 
-
         binding.signInTextView.setOnClickListener(v -> {
-            startActivity(new Intent(this, SignInActivity.class));
+
+            ObjectAnimator slideInAnimation = ObjectAnimator.ofFloat(binding.mainLayout, "translationY", 0f, displayHeight);
+            slideInAnimation.setDuration(ANIMATION_TIME);
+
+            slideInAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+//                    super.onAnimationEnd(animation);
+
+                    startActivity(new Intent(SignupActivity.this, SignInActivity.class));
+                    overridePendingTransition(0, 0);
+                }
+            });
+            slideInAnimation.start();
         });
 
         binding.signUpButton.setOnClickListener(v -> {
@@ -85,4 +102,14 @@ public class SignupActivity extends AppCompatActivity {
 
     }   // on create ends here ---------------------------------------------------------------------
 
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+        binding.mainLayout.post(() -> {
+            displayHeight = binding.mainLayout.getHeight();
+            ObjectAnimator slideOutAnimation = ObjectAnimator.ofFloat(binding.mainLayout, "translationY", displayHeight, 0f);
+            slideOutAnimation.setDuration(ANIMATION_TIME);
+            slideOutAnimation.start();
+        });
+    }
 }   // main class ends here ------------------------------------------------------------------------

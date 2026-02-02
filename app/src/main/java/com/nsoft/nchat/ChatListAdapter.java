@@ -1,5 +1,6 @@
 package com.nsoft.nchat;
 
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,12 +40,17 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.MyView
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         holder.iconTextView.setText("" + (position + 1));
-        holder.nameTextView.setText(receiverList.get(position));
+        holder.nameTextView.setText("Position: " + (position + 1));
+
+
+        ObjectAnimator objectAnimator = ObjectAnimator.ofFloat(holder.itemView, "alpha", 0f, 1f);
+        objectAnimator.setDuration(200l);
+        objectAnimator.start();
     }
 
     @Override
     public int getItemCount() {
-        return receiverList.size();
+        return 100;
     }
 
 }
