@@ -1,6 +1,9 @@
 package com.nsoft.nchat;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -21,9 +24,10 @@ import java.util.Random;
 
 public class MyMethodsClass {
     Context context;
-
+    SharedPreferences sharedPreferences;
     public MyMethodsClass(Context context) {
         this.context = context;
+        sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), MODE_PRIVATE);
     }
 
     public interface ResponseCallback {
@@ -120,15 +124,16 @@ public class MyMethodsClass {
         requestQueue.add(jsonObjectRequest);
     }
 
-    public void userDetailsPostRequest(String userId, ResponseCallback callback) {
-        String url = "https://backend.nsoftcompany.xyz/users/" + userId;
+    public void allUsersList(JsonArrayCallback callback) {
+        String user_id = sharedPreferences.getString("user_id", "null");
+        String url = context.getString(R.string.python_backend_url) + "/users/" + user_id;
 
         RequestQueue requestQueue = Volley.newRequestQueue(context);
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
             @Override
-            public void onResponse(JSONObject jsonObject) {
-                if (jsonObject != null) {
-                    callback.onSuccess(jsonObject);
+            public void onResponse(JSONArray jsonArray) {
+                if (jsonArray != null && jsonArray.length() > 0) {
+                    callback.onSuccess(jsonArray);
                 }
             }
         }, new Response.ErrorListener() {
@@ -138,7 +143,7 @@ public class MyMethodsClass {
             }
         });
 
-        requestQueue.add(jsonObjectRequest);
+        requestQueue.add(jsonArrayRequest);
     }
 
     public void getChatList(String userId, JsonArrayCallback callback) {
@@ -159,6 +164,10 @@ public class MyMethodsClass {
             }
         });
         requestQueue.add(jsonArrayRequest);
+    }
+
+    public void updateDeviceToken(){
+
     }
 
 }

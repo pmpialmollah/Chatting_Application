@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">NChat</string>
     <string name="socket_server_url">https://pial.nsoftcompany.xyz</string>
+    <string name="python_backend_url">https://backend.nsoftcompany.xyz</string>
 </resources>

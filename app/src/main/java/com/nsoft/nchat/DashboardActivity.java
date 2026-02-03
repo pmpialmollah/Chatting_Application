@@ -20,7 +20,11 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.android.volley.VolleyError;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.installations.FirebaseInstallations;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.nsoft.nchat.databinding.ActivityDashboardBinding;
 
 import org.json.JSONArray;
@@ -68,6 +72,27 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout, new DashboardFragment()).commit();
+
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w(TAG, "Fetching FCM registration token failed", task.getException());
+                            return;
+                        }
+                        // Get new FCM registration token
+                        String token = task.getResult();
+
+                        // Log and toast
+                        Log.d(TAG, token);
+                    }
+                });
+
+        FirebaseInstallations.getInstance().getId()
+                        .addOnSuccessListener(id -> {
+                            Log.d(TAG, "Installation id: " + id);
+                        });
 
         binding.navBar.setOnNavigationItemSelectedListener(menuItem -> {
             int menuId = menuItem.getItemId();
