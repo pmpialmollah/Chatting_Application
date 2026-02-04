@@ -85,6 +85,7 @@ public class SignupActivity extends AppCompatActivity {
                             Toast.makeText(SignupActivity.this, response, Toast.LENGTH_SHORT).show();
 
                             if (status) {
+                                editor.putBoolean("is_logged_in", true).apply();
                                 editor.putString("user_id", userId).apply();
                                 startActivity(new Intent(SignupActivity.this, DashboardActivity.class));
                                 finish();

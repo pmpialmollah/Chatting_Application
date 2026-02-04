@@ -85,14 +85,16 @@ public class SignInActivity extends AppCompatActivity {
                     public void onSuccess(JSONObject jsonObject) {
                         boolean status = Boolean.parseBoolean(jsonObject.optString("status", "false"));
                         if (status) {
-                            String user_id = jsonObject.optString("user_id", "Null");
+                            String user_id = jsonObject.optString("user_id", null);
 
-                            Toast.makeText(SignInActivity.this, user_id, Toast.LENGTH_SHORT).show();
-                            editor.putBoolean("is_logged_in", true).apply();
-                            editor.putString("user_id", user_id).apply();
+                            if (user_id != null) {
+                                Toast.makeText(SignInActivity.this, user_id, Toast.LENGTH_SHORT).show();
+                                editor.putBoolean("is_logged_in", true).apply();
+                                editor.putString("user_id", user_id).apply();
 
-                            startActivity(new Intent(SignInActivity.this, DashboardActivity.class));
-                            finish();
+                                startActivity(new Intent(SignInActivity.this, DashboardActivity.class));
+                                finish();
+                            }
                         } else {
                             Toast.makeText(SignInActivity.this, "No data found", Toast.LENGTH_SHORT).show();
                         }

@@ -25,6 +25,7 @@ import java.util.Random;
 public class MyMethodsClass {
     Context context;
     SharedPreferences sharedPreferences;
+
     public MyMethodsClass(Context context) {
         this.context = context;
         sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), MODE_PRIVATE);
@@ -146,27 +147,29 @@ public class MyMethodsClass {
         requestQueue.add(jsonArrayRequest);
     }
 
-    public void getChatList(String userId, JsonArrayCallback callback) {
-        String url = "https://backend.nsoftcompany.xyz/data/" + userId;
+    public void getConversationsList(String userId, ResponseCallback callback) {
+        String url = "https://backend.nsoftcompany.xyz/conversations/" + userId;
 
         RequestQueue requestQueue = Volley.newRequestQueue(context);
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
             @Override
-            public void onResponse(JSONArray jsonArray) {
-                if (jsonArray != null || !(jsonArray.length() > 0)) {
-                    callback.onSuccess(jsonArray);
+            public void onResponse(JSONObject jsonObject) {
+                if (jsonObject != null) {
+                    callback.onSuccess(jsonObject);
                 }
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError volleyError) {
-                callback.onError(volleyError);
+                if (volleyError != null) {
+                    callback.onError(volleyError);
+                }
             }
         });
-        requestQueue.add(jsonArrayRequest);
+        requestQueue.add(jsonObjectRequest);
     }
 
-    public void updateDeviceToken(){
+    public void updateDeviceToken() {
 
     }
 

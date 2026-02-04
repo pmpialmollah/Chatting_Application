@@ -9,6 +9,6 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
 
-        SocketManager.getInstance().connect();
+        SocketManager.getInstance(getApplicationContext()).connect();
     }
 }

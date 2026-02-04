@@ -1,41 +1,27 @@
 package com.nsoft.nchat;
 
 import android.Manifest;
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MenuItem;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.android.volley.VolleyError;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.installations.FirebaseInstallations;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.nsoft.nchat.databinding.ActivityDashboardBinding;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.socket.client.IO;
-import io.socket.client.Socket;
 
 public class DashboardActivity extends AppCompatActivity {
     private ActivityDashboardBinding binding;
@@ -63,7 +49,11 @@ public class DashboardActivity extends AppCompatActivity {
         myMethodsClass = new MyMethodsClass(getApplicationContext());
         receiverList = new ArrayList<>();
 
-        userId = sharedPreferences.getString("user_id", "null");
+        userId = sharedPreferences.getString("user_id", null);
+
+        if (userId != null) {
+            binding.appTitle.setText(userId);
+        }
 
         askNotificationPermission();
 
@@ -90,25 +80,26 @@ public class DashboardActivity extends AppCompatActivity {
                 });
 
         FirebaseInstallations.getInstance().getId()
-                        .addOnSuccessListener(id -> {
-                            Log.d(TAG, "Installation id: " + id);
-                        });
+                .addOnSuccessListener(id -> {
+                    Log.d(TAG, "Installation id: " + id);
+                });
 
         binding.navBar.setOnNavigationItemSelectedListener(menuItem -> {
             int menuId = menuItem.getItemId();
-            if (menuId == R.id.navHome){
+            if (menuId == R.id.navHome) {
                 getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout, new DashboardFragment()).commit();
-                return  true;
+                binding.appTitle.setText(getString(R.string.app_name));
+                return true;
             } else if (menuId == R.id.navUsers) {
                 getSupportFragmentManager().beginTransaction().replace(R.id.frameLayout, new UsersFragment()).commit();
+                binding.appTitle.setText("Users list");
                 return true;
             } else if (menuId == R.id.navTools) {
                 Toast.makeText(this, "Nav tools", Toast.LENGTH_SHORT).show();
                 return true;
-            }
-            else {
+            } else {
                 Toast.makeText(this, "No item", Toast.LENGTH_SHORT).show();
-                return  false;
+                return false;
             }
         });
 

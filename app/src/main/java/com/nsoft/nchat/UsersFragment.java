@@ -59,13 +59,14 @@ public class UsersFragment extends Fragment {
                         JSONObject person = jsonArray.optJSONObject(i);
                         if (person != null && person.length() > 0) {
 
+                            String user_id = person.optString("user_id");
                             String name = person.optString("name");
                             String online_status = person.optString("online_status");
                             String last_seen = person.optString("last_seen");
                             String bio = person.optString("bio");
                             String verification_badge = person.optString("verification_badge");
 
-                            userModelClass = new UserModelClass(name, online_status, last_seen, bio, verification_badge);
+                            userModelClass = new UserModelClass(user_id, name, online_status, last_seen, bio, verification_badge);
                             usersList.add(userModelClass);
                         }
                     }

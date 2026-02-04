@@ -1,8 +1,10 @@
 package com.nsoft.nchat;
 
 public class UserModelClass {
-    private String name, online_status, last_seen, bio, verification_badge;
-    public UserModelClass(String name, String online_status, String last_seen, String bio, String verification_badge){
+    private String user_id, name, online_status, last_seen, bio, verification_badge;
+
+    public UserModelClass(String user_id, String name, String online_status, String last_seen, String bio, String verification_badge) {
+        this.user_id = user_id;
         this.name = name;
         this.online_status = online_status;
         this.last_seen = last_seen;
@@ -28,5 +30,9 @@ public class UserModelClass {
 
     public String getVerification_badge() {
         return verification_badge;
+    }
+
+    public String getUser_id() {
+        return user_id;
     }
 }
