@@ -90,7 +90,7 @@ public class MyAdapter extends RecyclerView.Adapter {
             return TYPING_MESSAGE;
         }
 
-        if (messageModel.getSenderId().equals(myId)) {
+        if (messageModel.getSender_id().equals(myId)) {
             return SEND_MESSAGE;
         } else {
             return RECEIVED_MESSAGE;

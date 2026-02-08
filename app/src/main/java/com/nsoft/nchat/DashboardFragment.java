@@ -5,6 +5,8 @@ import static android.content.Context.MODE_PRIVATE;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +26,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DashboardFragment extends Fragment {
     private FragmentDashboardBinding binding;
@@ -48,7 +52,7 @@ public class DashboardFragment extends Fragment {
         myMethodsClass = new MyMethodsClass(getContext());
         receiverList = new ArrayList<>();
 
-        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.swipeRefreshLayout.setRefreshing(true);
 
         myAdapter = new ConversationsAdapter(getActivity(), receiverList);
         binding.chatListRecyclerView.setAdapter(myAdapter);
@@ -59,51 +63,70 @@ public class DashboardFragment extends Fragment {
         });
 
         if (userId != null) {
-            myMethodsClass.getConversationsList(userId, new MyMethodsClass.ResponseCallback() {
-                @Override
-                public void onSuccess(JSONObject jsonObject) {
-                    if (jsonObject != null) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        boolean status = Boolean.parseBoolean(jsonObject.optString("status"));
-                        if (status) {
-                            receiverList.clear();
-                            JSONArray jsonArray = jsonObject.optJSONArray("data");
-                            if (jsonArray != null) {
-                                for (int i = 0; i < jsonArray.length(); i++) {
-                                    JSONObject conversation = jsonArray.optJSONObject(i);
-                                    if (conversation != null) {
-                                        String name = conversation.optString("name");
-                                        String online_status = conversation.optString("online_status");
-                                        String last_message = conversation.optString("last_message");
-                                        String last_time = conversation.optString("last_time");
+            loadData();
+        }
 
-                                        String user_one = conversation.optString("user_one");
-                                        String user_two = conversation.optString("user_two");
+        binding.swipeRefreshLayout.setOnRefreshListener(() -> {
+            loadData();
+        });
+    }
 
-                                        String receiver_id = user_one.equals(userId) ? user_two : user_one;
+    // on create end here --------------------------------------------------------------------------
+    private void loadData() {
+        myMethodsClass.getConversationsList(userId, new MyMethodsClass.ResponseCallback() {
+            @Override
+            public void onSuccess(JSONObject jsonObject) {
+                if (jsonObject != null) {
+                    handleDataInBackground(jsonObject);
+                }
+            }
 
-                                        receiverList.add(new ConversationModel(receiver_id, name, online_status, last_time, last_message));
-                                    }
-                                }
-                                myAdapter.notifyDataSetChanged();
-                            }
-                        } else {
-                            Toast.makeText(getActivity(), "No data found...", Toast.LENGTH_SHORT).show();
+            @Override
+            public void onError(VolleyError error) {
+                binding.swipeRefreshLayout.setRefreshing(false);
+                Log.d("Volley", "onError: " + error.toString());
+            }
+        });
+    }
+
+    private void handleDataInBackground(JSONObject jsonObject) {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executorService.execute(() -> {
+
+            boolean status = Boolean.parseBoolean(jsonObject.optString("status"));
+
+            if (status) {
+                receiverList.clear();
+                JSONArray jsonArray = jsonObject.optJSONArray("data");
+                if (jsonArray != null) {
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject conversation = jsonArray.optJSONObject(i);
+                        if (conversation != null) {
+                            String name = conversation.optString("name");
+                            String online_status = conversation.optString("online_status");
+                            String last_message = conversation.optString("last_message");
+                            String last_time = conversation.optString("last_time");
+
+                            String user_one = conversation.optString("user_one");
+                            String user_two = conversation.optString("user_two");
+
+                            String receiver_id = user_one.equals(userId) ? user_two : user_one;
+
+                            receiverList.add(new ConversationModel(receiver_id, name, online_status, last_time, last_message));
                         }
                     }
                 }
-
-                @Override
-                public void onError(VolleyError error) {
-                    binding.progressBar.setVisibility(View.GONE);
-                    Log.d("Volley", "onError: " + error.toString());
-                }
+            } else {
+                Toast.makeText(getActivity(), "No data found...", Toast.LENGTH_SHORT).show();
+            }
+            handler.post(() -> {
+                binding.swipeRefreshLayout.setRefreshing(false);
+                myAdapter.notifyDataSetChanged();
             });
-
-        }
+        });
     }
-    // on create end here --------------------------------------------------------------------------
-
 
     // ---------------------------------------------------------------------------------------------
 }

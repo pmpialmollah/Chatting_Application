@@ -169,6 +169,27 @@ public class MyMethodsClass {
         requestQueue.add(jsonObjectRequest);
     }
 
+    public void getMessages(String conversation_id, ResponseCallback callback) {
+        String url = "https://backend.nsoftcompany.xyz/messages/" + conversation_id;
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+
+        JsonObjectRequest objectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject jsonObject) {
+                if (jsonObject != null) {
+                    callback.onSuccess(jsonObject);
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError volleyError) {
+                callback.onError(volleyError);
+            }
+        });
+
+        requestQueue.add(objectRequest);
+    }
+
     public void updateDeviceToken() {
 
     }

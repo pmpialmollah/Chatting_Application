@@ -1,30 +1,15 @@
 package com.nsoft.nchat;
 
-public class MessageModel {
-    //    private String senderId, receiverId, message;
+public class ChatMessageModel {
     private String message_id, conversation_id, sender_id, message, status, time;
-    private boolean isTyping;
 
-    public MessageModel(String message_id, String conversation_id, String sender_id, String message, String status, String time) {
+    public ChatMessageModel(String message_id, String conversation_id, String sender_id, String message, String status, String time) {
         this.message_id = message_id;
         this.conversation_id = conversation_id;
         this.sender_id = sender_id;
         this.message = message;
         this.status = status;
         this.time = time;
-        this.isTyping = false;
-    }
-
-    public MessageModel(boolean isTyping) {
-        this.isTyping = isTyping;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public boolean isTyping() {
-        return isTyping;
     }
 
     public String getMessage_id() {
@@ -37,6 +22,10 @@ public class MessageModel {
 
     public String getSender_id() {
         return sender_id;
+    }
+
+    public String getMessage() {
+        return message;
     }
 
     public String getStatus() {

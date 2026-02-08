@@ -10,18 +10,24 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.android.volley.VolleyError;
 import com.nsoft.nchat.databinding.ActivityChatBinding;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -101,9 +107,12 @@ public class ChatActivity extends AppCompatActivity {
                 if (!message.isEmpty()) {
                     JSONObject messageBundle = new JSONObject();
                     try {
+                        messageBundle.put("message_id", 00);
+                        messageBundle.put("conversation_id", getConversation_id(userId, receiver_user_id));
                         messageBundle.put("sender_id", userId);
                         messageBundle.put("receiver_id", receiver_user_id);
                         messageBundle.put("message", message);
+                        messageBundle.put("status", "sent");
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
@@ -125,9 +134,12 @@ public class ChatActivity extends AppCompatActivity {
                 if (!message.isEmpty()) {
                     JSONObject messageBundle = new JSONObject();
                     try {
+                        messageBundle.put("message_id", 00);
+                        messageBundle.put("conversation_id", getConversation_id(userId, "others"));
                         messageBundle.put("sender_id", userId);
                         messageBundle.put("receiver_id", "others");
                         messageBundle.put("message", message);
+                        messageBundle.put("status", "sent");
                     } catch (JSONException e) {
                         throw new RuntimeException(e);
                     }
@@ -181,6 +193,23 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     // on create end here --------------------------------------------------------------------------
+    private String getConversation_id(String sender_id, String receiver_id) {
+        List<String> list = new ArrayList<>();
+        list.add(sender_id);
+        list.add(receiver_id);
+        Collections.sort(list);
+        String result = "";
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            result = String.join("_", list);
+        } else {
+            for (int i = 0; i < list.size(); i++) {
+                result += list.get(i);
+                if (i < list.size() - 1) result += "_";
+            }
+        }
+
+        return result;
+    }
 
     @Override
     protected void onResume() {
@@ -189,6 +218,24 @@ public class ChatActivity extends AppCompatActivity {
             socket.on("received_message", onMessage);
             socket.on("typing", onTyping);
             socket.on("private_message", onPrivateMessage);
+        }
+
+//        myMethodsClass.getMessages();
+        if (receiver_user_id != null) {
+            String conversation_id = getConversation_id(userId, receiver_user_id);
+            myMethodsClass.getMessages(conversation_id, new MyMethodsClass.ResponseCallback() {
+                @Override
+                public void onSuccess(JSONObject jsonObject) {
+                    if (jsonObject != null) {
+                        handleChat(jsonObject);
+                    }
+                }
+
+                @Override
+                public void onError(VolleyError error) {
+                    Toast.makeText(ChatActivity.this, "Error: " + error.toString(), Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 
@@ -205,14 +252,18 @@ public class ChatActivity extends AppCompatActivity {
         public void call(Object... args) {
             JSONObject messageBundle = (JSONObject) args[0];
             try {
+                String message_id = messageBundle.getString("message_id");
+                String conversation_id = messageBundle.getString("conversation_id");
                 String sender_id = messageBundle.getString("sender_id");
-                String receiver_id = messageBundle.getString("receiver_id");
                 String message = messageBundle.getString("message");
+                String status = messageBundle.getString("status");
 
                 runOnUiThread(() -> {
-                    messages.add(new MessageModel(sender_id, receiver_id, message));
-                    adapter.notifyItemInserted(messages.size() - 1);
-                    binding.recyclerView.scrollToPosition(messages.size() - 1);
+                    if (adapter != null) {
+                        messages.add(new MessageModel(message_id, conversation_id, sender_id, message, status, "now"));
+                        adapter.notifyItemInserted(messages.size() - 1);
+                        binding.recyclerView.scrollToPosition(messages.size() - 1);
+                    }
                 });
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -227,14 +278,21 @@ public class ChatActivity extends AppCompatActivity {
             JSONObject messageBundle = (JSONObject) args[0];
             Log.d("PIAL", "call: " + messageBundle.toString());
             try {
+                String message_id = messageBundle.getString("message_id");
+                String conversation_id = messageBundle.getString("conversation_id");
                 String sender_id = messageBundle.getString("sender_id");
-                String receiver_id = messageBundle.getString("receiver_id");
                 String message = messageBundle.getString("message");
+                String status = messageBundle.getString("status");
 
                 runOnUiThread(() -> {
-                    privateMessages.add(new MessageModel(sender_id, receiver_id, message));
-                    privateMessageAdapter.notifyItemInserted(privateMessages.size() - 1);
-                    binding.recyclerView.scrollToPosition(privateMessages.size() - 1);
+                    if (privateMessageAdapter != null && receiver_user_id != null) {
+                        String current_conversation_id = getConversation_id(userId, receiver_user_id);
+                        if (conversation_id.equals(current_conversation_id)) {
+                            privateMessages.add(new MessageModel(message_id, conversation_id, sender_id, message, status, "now"));
+                            privateMessageAdapter.notifyItemInserted(privateMessages.size() - 1);
+                            binding.recyclerView.scrollToPosition(privateMessages.size() - 1);
+                        }
+                    }
                 });
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -267,6 +325,48 @@ public class ChatActivity extends AppCompatActivity {
             }
         }
     };
+
+    private void handleChat(JSONObject jsonObject) {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executorService.execute(() -> {
+            boolean status = Boolean.parseBoolean(jsonObject.optString("status"));
+            if (status) {
+                JSONArray jsonArray = jsonObject.optJSONArray("data");
+                if (jsonArray != null && jsonArray.length() > 0) {
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject messageBundle = jsonArray.optJSONObject(i);
+
+                        try {
+                            String message_id = String.valueOf(messageBundle.getInt("message_id"));
+                            String conversation_id = messageBundle.getString("conversation_id");
+                            String sender_id = messageBundle.getString("sender_id");
+                            String message = messageBundle.getString("message");
+                            String message_status = messageBundle.getString("status");
+                            String time = messageBundle.getString("time");
+
+                            if (privateMessageAdapter != null && receiver_user_id != null) {
+                                String current_conversation_id = getConversation_id(userId, receiver_user_id);
+                                if (conversation_id.equals(current_conversation_id)) {
+                                    privateMessages.add(new MessageModel(message_id, conversation_id, sender_id, message, message_status, time));
+                                }
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+
+                handler.post(() -> {
+                    privateMessageAdapter.notifyItemInserted(privateMessages.size() - 1);
+                    binding.recyclerView.scrollToPosition(privateMessages.size() - 1);
+                });
+            } else {
+                Toast.makeText(this, "No message found", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
     @Override
     protected void onStart() {
